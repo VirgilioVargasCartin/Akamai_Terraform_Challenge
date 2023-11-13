@@ -60,21 +60,34 @@ resource "aws_security_group" "akamai_app_sg" {
   description = "Security group for Akamai Three Tiered Application - Test by Virgilio"
   vpc_id      = aws_vpc.akamai_app_vpc.id
 
-  # Allow HTTP and SSH from anywhere
+  # Allow HTTP access (port 80) from the workstation to the LB server
   ingress {
+    description = "HTTP access from Workstation to LB"
     from_port   = 80
     to_port     = 80
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["16.16.123.14/32"]
   }
+
+  # Allow SSH access (port 22) from the workstation to all servers
   ingress {
+    description = "SSH access from Workstation"
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
+    cidr_blocks = ["16.16.123.14/32"]
   }
 
-  # Default egress rule
+  # Allow internal communication within the subnet
+  ingress {
+    description = "Internal Communication within Subnet"
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = [aws_subnet.akamai_app_subnet.cidr_block]
+  }
+
+  # Default egress rule to allow outbound traffic
   egress {
     from_port   = 0
     to_port     = 0
