@@ -1,0 +1,63 @@
+---
+- name: Configure Nginx Load Balancer
+  hosts: lb_servers
+  become: true
+  tasks:
+    - name: Install Nginx
+      yum:
+        name: nginx
+        state: present
+
+    - name: Configure Nginx for Tomcat
+      blockinfile:
+        path: /etc/nginx/nginx.conf
+        block: |
+          server {
+            listen 80;
+            location /Test/ {
+              proxy_pass http://192.168.0.12:8080; 
+              proxy_set_header Host $host;
+              proxy_set_header X-Real-IP $remote_addr;
+              proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+              proxy_set_header X-Forwarded-Proto $scheme;
+            }
+          }
+        marker: "# {mark} ANSIBLE MANAGED BLOCK"
+        insertafter: "http {"
+        create: yes
+
+    - name: Start and enable Nginx service
+      service:
+        name: nginx
+        state: restarted
+        enabled: yes
+
+- name: Configure Web Servers with Tomcat
+  hosts: web_servers
+  become: true
+  tasks:
+    - name: Install Tomcat
+      yum:
+        name: tomcat
+        state: present
+
+    - name: Start and enable Tomcat service
+      service:
+        name: tomcat
+        state: started
+        enabled: yes
+
+- name: Configure MongoDB Database Servers
+  hosts: db_servers
+  become: true
+  tasks:
+    - name: Install MongoDB
+      yum:
+        name: mongodb-org
+        state: present
+
+    - name: Start and enable MongoDB service
+      service:
+        name: mongod
+        state: started
+        enabled: yes
